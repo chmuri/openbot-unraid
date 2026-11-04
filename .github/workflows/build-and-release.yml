@@ -64,15 +64,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Multi-Arch Docker Image
+      - name: Build and Push Docker Image
         id: build_push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./docker/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           build-args: |
+            TARGETARCH=amd64
             VERSION=${{ steps.upstream.outputs.tag }}
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository }}:latest

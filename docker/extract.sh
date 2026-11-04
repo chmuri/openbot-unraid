@@ -4,11 +4,9 @@ set -euo pipefail
 TARGETARCH="${1:-amd64}"
 VERSION="${2:-latest}"
 
-echo "[EXTRACT] Target architecture: ${TARGETARCH}, requested version: ${VERSION}"
-
-if [ "$TARGETARCH" = "amd64" ]; then
+if [ -z "$TARGETARCH" ] || [ "$TARGETARCH" = "amd64" ] || [ "$TARGETARCH" = "x86_64" ]; then
     ARCH_SUFFIX="x86_64"
-elif [ "$TARGETARCH" = "arm64" ]; then
+elif [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" = "aarch64" ]; then
     ARCH_SUFFIX="arm64"
 else
     echo "[EXTRACT] ERROR: Unsupported architecture: $TARGETARCH" >&2
