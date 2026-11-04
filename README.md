@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/chmuri/openbot-unraid/actions"><img src="https://github.com/chmuri/openbot-unraid/actions/workflows/build-and-release.yml/badge.svg" alt="CI/CD Status" /></a>
-  <a href="https://github.com/chmuri/openbot-unraid/pkgs/container/openbot"><img src="https://img.shields.io/badge/GHCR-OpenBot-blue?logo=docker" alt="Docker Image" /></a>
+  <a href="https://github.com/chmuri/openbot-unraid/pkgs/container/openbot-unraid"><img src="https://img.shields.io/badge/GHCR-OpenBot-blue?logo=docker" alt="Docker Image" /></a>
   <a href="https://unraid.net"><img src="https://img.shields.io/badge/Unraid-Community%20Applications-orange" alt="Unraid CA" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg" alt="License" /></a>
 </p>

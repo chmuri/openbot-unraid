@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Container version="2">
   <Name>OpenBot</Name>
-  <Repository>ghcr.io/chmuri/openbot:latest</Repository>
-  <Registry>https://ghcr.io/v2/chmuri/openbot/tags/list</Registry>
+  <Repository>ghcr.io/chmuri/openbot-unraid:latest</Repository>
+  <Registry>https://ghcr.io/v2/chmuri/openbot-unraid/tags/list</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
