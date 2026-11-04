@@ -38,7 +38,7 @@ COPY --from=extractor /tmp/squashfs-root/resources/hosting/packages.txt /tmp/pac
 RUN apt-get update \
   && sed -e '/^#/d' -e '/^$/d' -e '/^apparmor$/d' /tmp/packages.txt \
     | xargs apt-get install --yes --no-install-recommends \
-      git less openssh-client procps ripgrep tini unzip xz-utils ca-certificates curl \
+      git less openssh-client procps ripgrep tini unzip xz-utils ca-certificates curl gosu \
   && rm -rf /var/lib/apt/lists/* /tmp/packages.txt
 
 # Configure openbot user (UID 1000) and runtime folders
@@ -65,9 +65,11 @@ LABEL org.opencontainers.image.title="OpenBot" \
 ENV LANG=C.UTF-8 \
     XDG_RUNTIME_DIR=/run/openbot
 
-USER openbot
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 WORKDIR /data
 VOLUME /data
 STOPSIGNAL SIGTERM
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/opt/OpenBot/app/resources/hosting/openbot-container"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]

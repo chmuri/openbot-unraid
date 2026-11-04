@@ -28,7 +28,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y libxml2-utils shellcheck
           xmllint --noout templates/openbot.xml
           xmllint --noout ca_profile.xml
-          shellcheck docker/extract.sh
+          shellcheck docker/extract.sh docker/entrypoint.sh
           echo "All XML templates and scripts are valid."
 
   build-and-push:
