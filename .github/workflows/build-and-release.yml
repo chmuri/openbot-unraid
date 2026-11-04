@@ -23,12 +23,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate XML Syntax
+      - name: Validate XML & Scripts
         run: |
-          sudo apt-get update && sudo apt-get install -y libxml2-utils
+          sudo apt-get update && sudo apt-get install -y libxml2-utils shellcheck
           xmllint --noout templates/openbot.xml
           xmllint --noout ca_profile.xml
-          echo "All XML templates are valid."
+          shellcheck docker/extract.sh
+          echo "All XML templates and scripts are valid."
 
   build-and-push:
     name: Multi-Arch Build from Upstream Release

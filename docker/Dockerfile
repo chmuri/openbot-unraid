@@ -12,6 +12,7 @@ ARG VERSION=latest
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
     ca-certificates \
     curl \
     jq \
@@ -20,27 +21,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /tmp
 
+# Copy extraction script
+COPY docker/extract.sh /usr/local/bin/extract.sh
+RUN chmod +x /usr/local/bin/extract.sh
+
 # Download the corresponding upstream AppImage and extract squashfs
-RUN set -euo pipefail; \
-    if [ "$TARGETARCH" = "amd64" ]; then \
-        ARCH_SUFFIX="x86_64"; \
-    elif [ "$TARGETARCH" = "arm64" ]; then \
-        ARCH_SUFFIX="arm64"; \
-    else \
-        echo "Unsupported architecture: $TARGETARCH" && exit 1; \
-    fi; \
-    if [ "$VERSION" = "latest" ]; then \
-        RELEASE_JSON=$(curl -fsSL https://api.github.com/repos/nightly-labs/openbot/releases/latest); \
-    else \
-        RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/nightly-labs/openbot/releases/tags/${VERSION}"); \
-    fi; \
-    DOWNLOAD_URL=$(echo "$RELEASE_JSON" | jq -r ".assets[] | select(.name | test(\"OpenBot-.*-${ARCH_SUFFIX}\\\\.AppImage$\")) | .browser_download_url"); \
-    echo "Downloading OpenBot AppImage for $TARGETARCH ($ARCH_SUFFIX) from: $DOWNLOAD_URL"; \
-    curl -fsSL -o /tmp/OpenBot.AppImage "$DOWNLOAD_URL"; \
-    chmod 0755 /tmp/OpenBot.AppImage; \
-    /tmp/OpenBot.AppImage --appimage-extract >/dev/null; \
-    chmod -R u+rwX,go=rX squashfs-root; \
-    test -x squashfs-root/resources/hosting/openbot-container
+RUN /usr/local/bin/extract.sh "${TARGETARCH}" "${VERSION}"
 
 FROM ${BASE}
 ARG DEBIAN_FRONTEND=noninteractive
