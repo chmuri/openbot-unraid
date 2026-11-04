@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <CommunityApplications>
   <Profile>
-    OpenBot for Unraid repository maintained by chmuri.
-    Provides containers and templates for OpenBot robotics platform, telemetry management, and peripheral passthrough (USB Serial, V4L2 Cameras, and GPU acceleration).
+    OpenBot for Unraid repository. Provides containers and templates for OpenBot robotics platform, telemetry management, and peripheral passthrough (USB Serial, V4L2 Cameras, and GPU acceleration).
   </Profile>
   <Icon>https://raw.githubusercontent.com/chmuri/openbot-unraid/main/docs/icon.png</Icon>
   <WebPage>https://github.com/chmuri/openbot-unraid</WebPage>
-  <DonateLink>https://github.com/sponsors/chmuri</DonateLink>
-  <DonateText>Support OpenBot Unraid development</DonateText>
 </CommunityApplications>

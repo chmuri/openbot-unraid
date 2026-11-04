@@ -5,7 +5,7 @@
 
 FROM python:3.11-slim-bookworm
 
-LABEL maintainer="chmuri"
+LABEL org.opencontainers.image.authors="OpenBot Community"
 LABEL org.opencontainers.image.title="OpenBot Unraid"
 LABEL org.opencontainers.image.description="OpenBot server and telemetry agent optimized for Unraid OS"
 LABEL org.opencontainers.image.source="https://github.com/chmuri/openbot-unraid"
