@@ -1,0 +1,155 @@
+name: Build, Test & Release OpenBot for Unraid
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/openbot
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  lint:
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Python Syntax & Lint Check
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+          flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Validate XML Template
+        run: |
+          sudo apt-get update && sudo apt-get install -y libxml2-utils
+          xmllint --noout templates/openbot.xml
+          echo "XML template is syntactically valid."
+
+      - name: ShellCheck Entrypoint & Healthcheck
+        run: |
+          sudo apt-get install -y shellcheck
+          shellcheck docker/entrypoint.sh docker/healthcheck.sh
+
+  build-and-push:
+    name: Multi-Arch Docker Build & Push
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: "linux/amd64,linux/arm64"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata (SemVer & Tags)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,format=short
+
+      - name: Build and Push Multi-Arch Docker Image
+        id: build_push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate Checksums & Artifacts Digest
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p artifacts
+          echo "Image Digest: ${{ steps.build_push.outputs.digest }}" > artifacts/docker-digest.txt
+          echo "${{ steps.build_push.outputs.digest }}  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" >> artifacts/sha256sums.txt
+          sha256sum templates/openbot.xml >> artifacts/sha256sums.txt
+
+      - name: Upload Build Artifacts
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-checksums
+          path: artifacts/
+
+  release:
+    name: GitHub Release & Unraid Template Sync
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Build Checksums
+        uses: actions/download-artifact@v4
+        with:
+          name: release-checksums
+          path: artifacts/
+
+      - name: Update Version and Date in Unraid XML Template
+        id: update_xml
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          RELEASE_DATE=$(date +'%Y-%m-%d')
+          echo "Updating templates/openbot.xml for tag ${TAG_NAME} with date ${RELEASE_DATE}..."
+          
+          sed -i "s|<Date>.*</Date>|<Date>${RELEASE_DATE}</Date>|g" templates/openbot.xml
+          
+          cp templates/openbot.xml "artifacts/openbot-${TAG_NAME}.xml"
+          sha256sum "artifacts/openbot-${TAG_NAME}.xml" >> artifacts/sha256sums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*
+            templates/openbot.xml
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
