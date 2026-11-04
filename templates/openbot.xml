@@ -8,42 +8,32 @@
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/chmuri/openbot-unraid/issues</Support>
-  <Project>https://github.com/chmuri/openbot-unraid</Project>
+  <Project>https://github.com/nightly-labs/openbot</Project>
   <Overview>
-    OpenBot for Unraid provides a complete runtime and management platform for OpenBot wheeled robots.
-    Features automated multi-arch deployment, hardware passthrough for USB microcontrollers (Arduino/ESP32), V4L2 cameras, Bluetooth LE, and GPU hardware video acceleration.
+    OpenBot is a local-first workspace for persistent AI teammates (Codex, Claude, Grok, Gemini, Cursor CLI, Cline, etc.).
+    Run agents with dedicated workspaces, task queues, file sharing, browser control, and agent-to-agent collaboration.
+    After starting the container, sign in using the Unraid WebGUI Terminal:
+    docker exec -it openbot openbot login
+    Then manage and chat with your agents at https://openbot.run/app or via the desktop/mobile apps.
   </Overview>
-  <Category>Automation: HomeAutomation: Tools:Utilities MediaApp:Video</Category>
-  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <Category>Productivity: Tools:Utilities AI: Cloud:</Category>
+  <WebUI>https://openbot.run/app</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/chmuri/openbot-unraid/main/templates/openbot.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/chmuri/openbot-unraid/main/docs/icon.png</Icon>
   <Banner>https://raw.githubusercontent.com/chmuri/openbot-unraid/main/docs/banner.png</Banner>
   <Date>2026-11-04</Date>
   <Changes>
-    [b]v1.0.0[/b]
-    - Initial production release for Unraid OS
-    - Multi-arch support for linux/amd64 and linux/arm64
-    - Dynamic PUID/PGID user mapping (nobody:users)
-    - Integrated USB Serial, Camera, and GPU DRI hardware passthrough
+    [b]Automated Daily Build[/b]
+    - Based on upstream nightly-labs/openbot releases
+    - Headless container server runtime with virtual X11 displays
+    - Multi-arch support (linux/amd64 and linux/arm64)
   </Changes>
+  <ExtraParams>--shm-size=1g --stop-timeout=60 --security-opt seccomp=unconfined --security-opt no-new-privileges:true</ExtraParams>
 
-  <!-- Network WebUI and API Port -->
-  <Config Name="WebUI &amp; API Port" Target="8080" Default="8080" Mode="tcp" Description="Primary network port for the OpenBot WebUI, REST API, and WebSockets" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+  <!-- Persistent Data Volume -->
+  <Config Name="Appdata Storage" Target="/data" Default="/mnt/user/appdata/openbot" Mode="rw" Description="Persistent directory on Unraid for OpenBot agents, workspaces, configurations, and databases." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/openbot</Config>
 
-  <!-- Persistent appdata configuration directory -->
-  <Config Name="Config Directory" Target="/config" Default="/mnt/user/appdata/openbot/config" Mode="rw" Description="Path to persistent configuration files, credentials, and robot profiles" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/openbot/config</Config>
-
-  <!-- Telemetry and data directory -->
-  <Config Name="Data Directory" Target="/data" Default="/mnt/user/appdata/openbot/data" Mode="rw" Description="Storage location for ML models, telemetry logs, and video recordings" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/openbot/data</Config>
-
-  <!-- PUID & PGID user permissions -->
-  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="Unraid user ID (default 99 for nobody)" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
-  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Unraid group ID (default 100 for users)" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
-  <Config Name="UMASK" Target="UMASK" Default="022" Mode="" Description="File permissions creation mask (e.g., 022 or 002)" Type="Variable" Display="advanced" Required="false" Mask="false">022</Config>
-
-  <!-- Hardware passthrough devices -->
-  <Config Name="Device: USB Serial (Microcontroller)" Target="/dev/ttyUSB0" Default="/dev/ttyUSB0" Mode="" Description="Path to connected microcontroller (/dev/ttyUSB0 or /dev/serial/by-id/...)" Type="Device" Display="always" Required="false" Mask="false">/dev/ttyUSB0</Config>
-  <Config Name="Device: V4L2 Video Camera" Target="/dev/video0" Default="/dev/video0" Mode="" Description="Path to host video capture device (/dev/video0)" Type="Device" Display="advanced" Required="false" Mask="false">/dev/video0</Config>
-  <Config Name="Device: Hardware Acceleration (DRI)" Target="/dev/dri" Default="/dev/dri" Mode="" Description="GPU Direct Rendering Infrastructure node (Intel QuickSync/VAAPI)" Type="Device" Display="advanced" Required="false" Mask="false">/dev/dri</Config>
+  <!-- Virtual Display Size -->
+  <Config Name="Virtual Display Size" Target="OPENBOT_DISPLAY_SIZE" Default="1280x800" Mode="" Description="Virtual display resolution used for embedded agent browser tasks (default: 1280x800)." Type="Variable" Display="advanced" Required="false" Mask="false">1280x800</Config>
 
 </Container>

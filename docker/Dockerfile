@@ -1,62 +1,87 @@
+# syntax=docker/dockerfile:1
 # ==============================================================================
-# OpenBot for Unraid OS - Production Multi-arch Dockerfile
-# Supports: linux/amd64 and linux/arm64
+# OpenBot for Unraid OS - Multi-arch Automated Build
+# Packages upstream nightly-labs/openbot releases for Unraid OS
 # ==============================================================================
 
-FROM python:3.11-slim-bookworm
+ARG BASE=ubuntu:24.04
 
-LABEL org.opencontainers.image.authors="OpenBot Community"
-LABEL org.opencontainers.image.title="OpenBot Unraid"
-LABEL org.opencontainers.image.description="OpenBot server and telemetry agent optimized for Unraid OS"
-LABEL org.opencontainers.image.source="https://github.com/chmuri/openbot-unraid"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
+FROM ${BASE} AS extractor
+ARG TARGETARCH
+ARG VERSION=latest
+ARG DEBIAN_FRONTEND=noninteractive
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    OPENBOT_PORT=8080 \
-    OPENBOT_CONFIG_DIR=/config \
-    OPENBOT_DATA_DIR=/data \
-    PUID=99 \
-    PGID=100 \
-    UMASK=022
-
-# Install base packages, gosu privilege dropper, and hardware peripheral utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash \
     ca-certificates \
     curl \
-    gosu \
-    procps \
-    tzdata \
-    v4l-utils \
-    libgl1 \
-    libglib2.0-0 \
+    jq \
+    file \
     && rm -rf /var/lib/apt/lists/*
 
-# Create application and volume directories
-RUN mkdir -p /app /config /data
+WORKDIR /tmp
 
-WORKDIR /app
+# Download the corresponding upstream AppImage and extract squashfs
+RUN set -euo pipefail; \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+        ARCH_SUFFIX="x86_64"; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        ARCH_SUFFIX="arm64"; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH" && exit 1; \
+    fi; \
+    if [ "$VERSION" = "latest" ]; then \
+        RELEASE_JSON=$(curl -fsSL https://api.github.com/repos/nightly-labs/openbot/releases/latest); \
+    else \
+        RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/nightly-labs/openbot/releases/tags/${VERSION}"); \
+    fi; \
+    DOWNLOAD_URL=$(echo "$RELEASE_JSON" | jq -r ".assets[] | select(.name | test(\"OpenBot-.*-${ARCH_SUFFIX}\\\\.AppImage$\")) | .browser_download_url"); \
+    echo "Downloading OpenBot AppImage for $TARGETARCH ($ARCH_SUFFIX) from: $DOWNLOAD_URL"; \
+    curl -fsSL -o /tmp/OpenBot.AppImage "$DOWNLOAD_URL"; \
+    chmod 0755 /tmp/OpenBot.AppImage; \
+    /tmp/OpenBot.AppImage --appimage-extract >/dev/null; \
+    chmod -R u+rwX,go=rX squashfs-root; \
+    test -x squashfs-root/resources/hosting/openbot-container
 
-# Copy application source
-COPY src/ /app/src/
+FROM ${BASE}
+ARG DEBIAN_FRONTEND=noninteractive
 
-# Copy entrypoint and healthcheck scripts
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY docker/healthcheck.sh /usr/local/bin/healthcheck.sh
+# Copy package requirements from the extracted upstream release
+COPY --from=extractor /tmp/squashfs-root/resources/hosting/packages.txt /tmp/packages.txt
 
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/healthcheck.sh
+# Install packages required for OpenBot self-hosted server runtime
+RUN apt-get update \
+  && sed -e '/^#/d' -e '/^$/d' -e '/^apparmor$/d' /tmp/packages.txt \
+    | xargs apt-get install --yes --no-install-recommends \
+      git less openssh-client procps ripgrep tini unzip xz-utils ca-certificates curl \
+  && rm -rf /var/lib/apt/lists/* /tmp/packages.txt
 
-# Volumes compliant with Unraid user shares (/mnt/user/appdata/openbot)
-VOLUME ["/config", "/data"]
+# Configure openbot user (UID 1000) and runtime folders
+RUN userdel --remove ubuntu 2>/dev/null || true \
+  && useradd --uid 1000 --user-group --home-dir /data --create-home --shell /bin/bash openbot \
+  && install -d -o openbot -g openbot -m 0700 /run/openbot
 
-# WebUI and API port
-EXPOSE 8080
+RUN install -d -m 0755 /var/lib/openbot-update/requests /var/lib/openbot-update/status
+COPY --from=extractor /tmp/squashfs-root /opt/OpenBot/app
+RUN install -d -m 0755 /opt/OpenBot/hosted \
+  && printf 'container\n' >/opt/OpenBot/hosted/mode \
+  && ln -s /opt/OpenBot/app/resources/hosting/openbot /usr/local/bin/openbot
 
-# Unraid Docker engine integrated healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD /usr/local/bin/healthcheck.sh
+ARG VERSION=unknown
+ARG REVISION=unknown
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["python3", "/app/src/app.py"]
+LABEL org.opencontainers.image.title="OpenBot" \
+  org.opencontainers.image.description="OpenBot AI Workspace desktop server for Unraid OS" \
+  org.opencontainers.image.source="https://github.com/chmuri/openbot-unraid" \
+  org.opencontainers.image.licenses="PolyForm-Noncommercial-1.0.0" \
+  org.opencontainers.image.version="${VERSION}" \
+  org.opencontainers.image.revision="${REVISION}"
+
+ENV LANG=C.UTF-8 \
+    XDG_RUNTIME_DIR=/run/openbot
+
+USER openbot
+WORKDIR /data
+VOLUME /data
+STOPSIGNAL SIGTERM
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/opt/OpenBot/app/resources/hosting/openbot-container"]
