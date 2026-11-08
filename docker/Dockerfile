@@ -25,8 +25,12 @@ WORKDIR /tmp
 COPY docker/extract.sh /usr/local/bin/extract.sh
 RUN chmod +x /usr/local/bin/extract.sh
 
-# Download the corresponding upstream AppImage and extract squashfs
-RUN /usr/local/bin/extract.sh "${TARGETARCH}" "${VERSION}"
+# Download the corresponding upstream AppImage and extract squashfs.
+# GITHUB_TOKEN is optional (passed as a build secret) and only used for
+# api.github.com calls to avoid rate limits / transient 5xx errors.
+RUN --mount=type=secret,id=github_token \
+    GITHUB_TOKEN="$(cat /run/secrets/github_token 2>/dev/null || true)" \
+    /usr/local/bin/extract.sh "${TARGETARCH}" "${VERSION}"
 
 FROM ${BASE}
 ARG DEBIAN_FRONTEND=noninteractive

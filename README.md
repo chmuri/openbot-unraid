@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>Unraid OS integration and automated daily multi-arch builds for <a href="https://github.com/nightly-labs/openbot">nightly-labs/openbot</a></b><br>
+  <b>Unraid OS integration and automated daily builds for <a href="https://github.com/nightly-labs/openbot">nightly-labs/openbot</a></b><br>
   A local-first desktop workspace for persistent AI teammates (Claude Code, Codex, Grok CLI, Gemini, Cursor CLI, Cline, etc.).
 </p>
 
@@ -22,7 +22,7 @@
 
 - 🤖 **Persistent AI Teammates:** Run Codex, Claude, Grok, Gemini, Cursor CLI, Cline, and custom ACP agents on your Unraid server.
 - 🔄 **Daily Automated Builds:** Track upstream releases from [nightly-labs/openbot](https://github.com/nightly-labs/openbot) every 24 hours.
-- ⚡ **Multi-Architecture:** Built for both `linux/amd64` and `linux/arm64`.
+- ⚡ **linux/amd64:** Built for x86_64 Unraid hosts (ARM64 is not packaged).
 - 📁 **Unraid CA Ready:** Dedicated Community Applications template with persistent `/mnt/user/appdata/openbot` volume mapping.
 
 ---

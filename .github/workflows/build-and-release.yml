@@ -32,7 +32,7 @@ jobs:
           echo "All XML templates and scripts are valid."
 
   build-and-push:
-    name: Multi-Arch Build from Upstream Release
+    name: Build from Upstream Release
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -41,9 +41,15 @@ jobs:
 
       - name: Fetch Upstream Release Information
         id: upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_JSON=$(curl -fsSL https://api.github.com/repos/nightly-labs/openbot/releases/latest)
-          TAG_NAME=$(echo "$RELEASE_JSON" | jq -r '.tag_name')
+          RELEASE_JSON=$(curl --fail --silent --show-error --location \
+            --retry 10 --retry-all-errors --retry-delay 5 --max-time 60 \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/nightly-labs/openbot/releases/latest)
+          TAG_NAME=$(echo "$RELEASE_JSON" | jq -er '.tag_name')
           VERSION="${TAG_NAME#v}"
           echo "Found upstream version: $VERSION ($TAG_NAME)"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -75,6 +81,8 @@ jobs:
           build-args: |
             TARGETARCH=amd64
             VERSION=${{ steps.upstream.outputs.tag }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository }}:latest
             ${{ env.REGISTRY }}/${{ github.repository }}:${{ steps.upstream.outputs.version }}
@@ -111,8 +119,14 @@ jobs:
 
       - name: Fetch Upstream Release Information
         id: upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG_NAME=$(curl -fsSL https://api.github.com/repos/nightly-labs/openbot/releases/latest | jq -r '.tag_name')
+          TAG_NAME=$(curl --fail --silent --show-error --location \
+            --retry 10 --retry-all-errors --retry-delay 5 --max-time 60 \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/nightly-labs/openbot/releases/latest | jq -er '.tag_name')
           VERSION="${TAG_NAME#v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG_NAME" >> "$GITHUB_OUTPUT"

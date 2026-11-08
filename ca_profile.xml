@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <CommunityApplications>
   <Profile>
-    OpenBot for Unraid repository. Provides automated daily multi-arch builds and Unraid Community Applications integration for OpenBot (nightly-labs/openbot) - the local-first AI workspace for persistent teammates.
+    OpenBot for Unraid repository. Provides automated daily linux/amd64 builds and Unraid Community Applications integration for OpenBot (nightly-labs/openbot) - the local-first AI workspace for persistent teammates.
   </Profile>
   <Icon>https://raw.githubusercontent.com/chmuri/openbot-unraid/main/docs/icon.png</Icon>
   <WebPage>https://github.com/chmuri/openbot-unraid</WebPage>

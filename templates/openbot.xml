@@ -26,7 +26,7 @@
     [b]Automated Daily Build[/b]
     - Based on upstream nightly-labs/openbot releases
     - Headless container server runtime with virtual X11 displays
-    - Multi-arch support (linux/amd64 and linux/arm64)
+    - Built for linux/amd64 (Unraid x86_64 hosts)
   </Changes>
   <ExtraParams>--shm-size=1g --stop-timeout=60 --security-opt seccomp=unconfined --security-opt no-new-privileges:true</ExtraParams>
 
